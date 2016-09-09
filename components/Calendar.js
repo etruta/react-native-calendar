@@ -24,16 +24,23 @@ export default class Calendar extends Component {
 
   static propTypes = {
     customStyle: PropTypes.object,
+    width: PropTypes.number,
     dayHeadings: PropTypes.array,
     eventDates: PropTypes.array,
     monthNames: PropTypes.array,
-    nextButtonText: PropTypes.string,
+    nextButtonText: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.object
+    ]),
     onDateSelect: PropTypes.func,
     onSwipeNext: PropTypes.func,
     onSwipePrev: PropTypes.func,
     onTouchNext: PropTypes.func,
     onTouchPrev: PropTypes.func,
-    prevButtonText: PropTypes.string,
+    prevButtonText: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.object
+    ]),
     scrollEnabled: PropTypes.bool,
     selectedDate: PropTypes.any,
     showControls: PropTypes.bool,
@@ -41,10 +48,12 @@ export default class Calendar extends Component {
     titleFormat: PropTypes.string,
     today: PropTypes.any,
     weekStart: PropTypes.number,
+    momentLocale: PropTypes.string,
   };
 
   static defaultProps = {
     customStyle: {},
+    width: DEVICE_WIDTH,
     dayHeadings: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
     eventDates: [],
     monthNames: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -78,17 +87,29 @@ export default class Calendar extends Component {
     return [moment(currentMonth)];
   }
 
- prepareEventDates(eventDates) {
+ prepareEventDates(eventDates, events) {
     const parsedDates = {};
 
+    // Dates without any custom properties
     eventDates.forEach(event => {
       const date = moment(event);
       const month = moment(date).startOf('month').format();
-      if (!parsedDates[month]) {
-        parsedDates[month] = {};
-      }
-      parsedDates[month][date.date() - 1] = true;
-    })
+      parsedDates[month] = parsedDates[month] || {};
+      parsedDates[month][date.date() - 1] = {};
+    });
+
+    // Dates with custom properties
+    if (events) {
+      events.forEach(event => {
+        if (event.date) {
+          const date = moment(event.date);
+          const month = moment(date).startOf('month').format();
+          parsedDates[month] = parsedDates[month] || {};
+          parsedDates[month][date.date() - 1] = event;
+        }
+      });
+    }
+
     return parsedDates;
   }
 
@@ -110,7 +131,7 @@ export default class Calendar extends Component {
   }
 
   scrollToItem(itemIndex) {
-    const scrollToX = itemIndex * DEVICE_WIDTH;
+    const scrollToX = itemIndex * this.props.width;
     if (this.props.scrollEnabled) {
       this._calendar.scrollTo({ y: 0, x: scrollToX, animated: false });
     }
@@ -118,7 +139,7 @@ export default class Calendar extends Component {
 
   scrollEnded(event) {
     const position = event.nativeEvent.contentOffset.x;
-    const currentPage = position / DEVICE_WIDTH;
+    const currentPage = position / this.props.width;
     const newMoment = moment(this.state.currentMonthMoment).add(currentPage - VIEW_INDEX, 'month');
     this.setState({ currentMonthMoment: newMoment });
 
@@ -129,7 +150,7 @@ export default class Calendar extends Component {
     }
   }
 
-  renderMonthView(argMoment, eventDatesMap) {
+  renderMonthView(argMoment, eventsMap) {
 
     let
       renderIndex = 0,
@@ -148,8 +169,8 @@ export default class Calendar extends Component {
       selectedIndex = moment(selectedMoment).date() - 1,
       selectedMonthIsArg = selectedMoment.isSame(argMoment, 'month');
 
-    const events = (eventDatesMap !== null)
-      ? eventDatesMap[argMoment.startOf('month').format()]
+    const events = (eventsMap !== null)
+      ? eventsMap[argMoment.startOf('month').format()]
       : null;
 
     do {
@@ -168,7 +189,7 @@ export default class Calendar extends Component {
             caption={`${dayIndex + 1}`}
             isToday={argMonthIsToday && (dayIndex === todayIndex)}
             isSelected={selectedMonthIsArg && (dayIndex === selectedIndex)}
-            hasEvent={events && events[dayIndex] === true}
+            event={events && events[dayIndex]}
             usingEvents={this.props.eventDates.length > 0}
             customStyle={this.props.customStyle}
           />
@@ -255,7 +276,8 @@ export default class Calendar extends Component {
 
   render() {
     const calendarDates = this.getMonthStack(this.state.currentMonthMoment);
-    const eventDatesMap = this.prepareEventDates(this.props.eventDates);
+    const eventDatesMap = this.prepareEventDates(this.props.eventDates,
+      this.props.events);
 
     return (
       <View style={[styles.calendarContainer, this.props.customStyle.calendarContainer]}>

@@ -70,6 +70,8 @@ export default class Day extends Component {
       usingEvents,
     } = this.props;
 
+    const customEventAlertView = (event) ? event.customAlertView : null;
+
     return filler
     ? (
         <TouchableWithoutFeedback>
@@ -93,6 +95,7 @@ export default class Day extends Component {
               event && event.eventIndicator]}
             />
           }
+          {customEventAlertView}
         </View>
       </TouchableOpacity>
     );

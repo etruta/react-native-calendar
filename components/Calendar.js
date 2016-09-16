@@ -45,6 +45,10 @@ export default class Calendar extends Component {
     selectedDate: PropTypes.any,
     showControls: PropTypes.bool,
     startDate: PropTypes.any,
+    titleText: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.object
+    ]),
     titleFormat: PropTypes.string,
     today: PropTypes.any,
     weekStart: PropTypes.number,
@@ -63,6 +67,7 @@ export default class Calendar extends Component {
     scrollEnabled: false,
     showControls: false,
     startDate: moment().format('YYYY-MM-DD'),
+    titleText: '',
     titleFormat: 'MMMM YYYY',
     today: moment(),
     weekStart: 1,
@@ -241,6 +246,13 @@ export default class Calendar extends Component {
 
   renderTopBar() {
     let localizedMonth = this.props.monthNames[this.state.currentMonthMoment.month()];
+    const titleText = (this.props.titleText !== '') ? (
+      this.props.titleText
+    ) : (
+      (this.props.showControls) ?
+      `${localizedMonth} ${this.state.currentMonthMoment.year()}` :
+      this.state.currentMonthMoment.format(this.props.titleFormat)
+    );
     return this.props.showControls
     ? (
         <View style={[styles.calendarControls, this.props.customStyle.calendarControls]}>
@@ -253,7 +265,7 @@ export default class Calendar extends Component {
             </Text>
           </TouchableOpacity>
           <Text style={[styles.title, this.props.customStyle.title]}>
-            {localizedMonth} {this.state.currentMonthMoment.year()}
+            {titleText}
           </Text>
           <TouchableOpacity
             style={[styles.controlButton, this.props.customStyle.controlButton]}
@@ -268,7 +280,7 @@ export default class Calendar extends Component {
     : (
       <View style={[styles.calendarControls, this.props.customStyle.calendarControls]}>
         <Text style={[styles.title, this.props.customStyle.title]}>
-          {this.state.currentMonthMoment.format(this.props.titleFormat)}
+          {titleText}
         </Text>
       </View>
     );
